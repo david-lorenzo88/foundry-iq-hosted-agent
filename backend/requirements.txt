@@ -1,0 +1,10 @@
+fastapi>=0.115.0
+uvicorn[standard]>=0.30.0
+httpx>=0.27.0
+azure-identity>=1.19.0
+# azure.identity.aio needs an async transport; without it DefaultAzureCredential
+# raises ImportError at startup. Locally it arrives via agent-framework, so the
+# backend only fails when installed on its own (e.g. in the container).
+aiohttp>=3.10.0
+python-dotenv>=1.0.0
+pydantic>=2.0.0

@@ -1,0 +1,11 @@
+.venv/
+.env
+.git/
+__pycache__/
+*.pyc
+web/node_modules/
+web/dist/
+docs/
+agent/
+deploy/
+*.md
