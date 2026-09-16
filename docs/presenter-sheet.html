@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Foundry IQ Agent Walkthrough</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+:root{
+  --ground:#F3F5F7; --surface:#FFFFFF; --ink:#16202B; --muted:#586575; --line:#DCE2E8;
+  --accent:#0B6E75; --accent-soft:#E1F0F0; --say:#8A5A00; --say-soft:#FBF1DC;
+  --code-bg:#101820; --code-ink:#D5DEE7; --code-dim:#6F7F90; --code-mark:#1E3A40; --code-hl:#7FE0E6;
+  --warn:#9B3B26; --warn-soft:#FBE9E4;
+  --sans:"Instrument Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --ground:#0D1218; --surface:#141B23; --ink:#E5EBF1; --muted:#95A3B3; --line:#26303B;
+  --accent:#5CC6CC; --accent-soft:#12292C; --say:#F0C46A; --say-soft:#2A2213;
+  --code-bg:#0A0F14; --code-mark:#15343A; --warn:#F09A84; --warn-soft:#2C1814;
+}}
+:root[data-theme="dark"]{
+  --ground:#0D1218; --surface:#141B23; --ink:#E5EBF1; --muted:#95A3B3; --line:#26303B;
+  --accent:#5CC6CC; --accent-soft:#12292C; --say:#F0C46A; --say-soft:#2A2213;
+  --code-bg:#0A0F14; --code-mark:#15343A; --warn:#F09A84; --warn-soft:#2C1814;
+}
+*{box-sizing:border-box}
+body{background:var(--ground);color:var(--ink);font:16px/1.6 var(--sans);padding:0 20px}
+.wrap{max-width:1040px;margin:0 auto;padding-block:40px 72px}
+h1,h2,h3{text-wrap:balance;line-height:1.2;margin:0}
+h1{font-size:2rem;font-weight:700;letter-spacing:-.01em}
+h2{font-size:1.35rem;font-weight:650}
+h3{font-size:.78rem;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+p{margin:0}
+code{font-family:var(--mono);font-size:.88em;background:var(--accent-soft);color:var(--accent);padding:.08em .35em;border-radius:4px}
+.lede{color:var(--muted);max-width:62ch;margin-top:10px}
+
+.header{display:flex;flex-direction:column;gap:6px;padding-bottom:28px;border-bottom:1px solid var(--line)}
+.kicker{font:600 .78rem var(--sans);letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+
+.order{margin:28px 0 8px;display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;padding:0;list-style:none;counter-reset:step}
+.order li{counter-increment:step;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px 14px;font-size:.92rem}
+.order li::before{content:counter(step);display:block;font:600 .75rem var(--mono);color:var(--accent);margin-bottom:4px}
+.order a{color:inherit;text-decoration:none}
+.order a:hover,.order a:focus-visible{color:var(--accent);text-decoration:underline}
+.order b{display:block;font-weight:600}
+.order span{color:var(--muted);font-size:.85rem}
+
+section.part{margin-top:56px;scroll-margin-top:16px}
+.part-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 14px;margin-bottom:6px}
+.file{font:500 .82rem var(--mono);color:var(--muted)}
+.part > .lede{margin-bottom:20px}
+
+.beat{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:20px;padding:20px 0;border-top:1px solid var(--line)}
+@media (max-width:780px){.beat{grid-template-columns:1fr}}
+.beat-text{display:flex;flex-direction:column;gap:10px}
+.beat-text h4{margin:0;font-size:1.02rem;font-weight:600;text-wrap:balance}
+.lines{font:.78rem var(--mono);color:var(--muted)}
+.say{background:var(--say-soft);color:var(--ink);border-radius:6px;padding:10px 12px;font-size:.95rem}
+.say::before{content:"Say";display:block;font:600 .7rem var(--sans);letter-spacing:.1em;text-transform:uppercase;color:var(--say);margin-bottom:2px}
+.warn{background:var(--warn-soft);border-radius:6px;padding:10px 12px;font-size:.95rem}
+.warn::before{content:"Audience will hit this";display:block;font:600 .7rem var(--sans);letter-spacing:.1em;text-transform:uppercase;color:var(--warn);margin-bottom:2px}
+
+pre{margin:0;background:var(--code-bg);color:var(--code-ink);border-radius:8px;padding:14px 0;overflow-x:auto;font:13px/1.55 var(--mono);tab-size:4}
+pre .l{display:block;padding:0 16px 0 0;white-space:pre}
+pre .l::before{content:attr(data-n);display:inline-block;width:3.2em;padding-right:1em;text-align:right;color:var(--code-dim);user-select:none}
+pre .m{background:var(--code-mark);box-shadow:inset 3px 0 0 var(--code-hl)}
+pre .c{color:var(--code-dim)}
+pre .s{color:#E8C07D}
+pre .k{color:#8FB8FF}
+
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin-top:18px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:16px 18px;display:flex;flex-direction:column;gap:8px}
+.card p,.card li{font-size:.95rem}
+.card ul{margin:0;padding-left:1.1em;display:flex;flex-direction:column;gap:6px}
+.prompt{font:.9rem var(--mono);background:var(--accent-soft);color:var(--ink);border-radius:6px;padding:8px 10px}
+.qa dt{font-weight:600}
+.qa dd{margin:2px 0 12px;color:var(--muted)}
+.qa{margin:0}
+@media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="header">
+    <p class="kicker">Session presenter sheet</p>
+    <h1>Airbus maintenance agent: the code, in speaking order</h1>
+    <p class="lede">A Microsoft Foundry hosted agent grounded in a Foundry IQ knowledge base. Code excerpts are real and line numbers match the repo. Highlighted lines are the ones to point at.</p>
+  </header>
+
+  <ol class="order" aria-label="Running order">
+    <li><a href="#demo"><b>Demo first</b><span>Watch the trace fill in</span></a></li>
+    <li><a href="#agent"><b>The hosted agent</b><span>agent/main.py</span></a></li>
+    <li><a href="#iq"><b>Connecting to Foundry IQ</b><span>agent/knowledge_base.py</span></a></li>
+    <li><a href="#deploy"><b>Configure &amp; deploy</b><span>deploy/deploy_agent.py</span></a></li>
+    <li><a href="#call"><b>Calling it &amp; traces</b><span>backend/</span></a></li>
+    <li><a href="#close"><b>Back to the demo</b><span>Grounding check</span></a></li>
+  </ol>
+
+  <section class="part" id="demo">
+    <div class="part-head"><h2>Open with the demo</h2></div>
+    <p class="lede">Let the audience see the output before the code, so every file you open answers “how did that happen?”</p>
+    <div class="cards">
+      <div class="card">
+        <h3>Ask</h3>
+        <p class="prompt">What is the maximum load on the NLG jacking point for the A320neo?</p>
+        <p>Expected: <strong>9 900 kg (21 826 lb)</strong>, cited to FIGURE-2-14-0-991-063-A01.</p>
+      </div>
+      <div class="card">
+        <h3>Point at the trace panel</h3>
+        <ul>
+          <li>The query the model chose to send</li>
+          <li>Two query-planning rounds</li>
+          <li>Several subqueries, each with hits and latency</li>
+          <li>Tens of thousands of reasoning tokens</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>While it runs</h3>
+        <p>Retrieval takes <strong>8–47 s</strong>. Fill the silence: “it’s planning and running several searches, not one. We’ll see each of them in a second.”</p>
+        <p>First request after ~5 min idle also pays a cold start.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="part" id="agent">
+    <div class="part-head"><h2>The hosted agent</h2><span class="file">agent/main.py · 77 lines</span></div>
+    <p class="lede">The whole agent fits on one screen. Open with that.</p>
+
+    <div class="beat">
+      <div class="beat-text">
+        <h4>Three building blocks</h4>
+        <p class="lines">main.py:12–14</p>
+        <p><code>Agent</code> defines it, <code>FoundryChatClient</code> connects to the model, <code>ResponsesHostServer</code> makes it a hosted agent.</p>
+      </div>
+<pre><span class="l m" data-n="12"><span class="k">from</span> agent_framework <span class="k">import</span> Agent</span><span class="l m" data-n="13"><span class="k">from</span> agent_framework.foundry <span class="k">import</span> FoundryChatClient</span><span class="l m" data-n="14"><span class="k">from</span> agent_framework_foundry_hosting <span class="k">import</span> ResponsesHostServer</span><span class="l" data-n="15"><span class="k">from</span> azure.identity.aio <span class="k">import</span> DefaultAzureCredential</span><span class="l" data-n="16"><span class="k">from</span> dotenv <span class="k">import</span> load_dotenv</span><span class="l" data-n="17"><span class="k">from</span> knowledge_base <span class="k">import</span> build_search_tool, client_from_env</span></pre>
+    </div>
+
+    <div class="beat">
+      <div class="beat-text">
+        <h4>Model, instructions, tools</h4>
+        <p class="lines">main.py:51–69</p>
+        <p>Model auth is <code>DefaultAzureCredential</code>, so there are no API keys: your login locally, the agent’s identity in Foundry.</p>
+        <p class="say">The platform stores the conversation, so we set <code>store: False</code> and don’t store it twice.</p>
+      </div>
+<pre><span class="l" data-n="51"><span class="k">async def</span> main() -&gt; None:</span><span class="l m" data-n="52">    credential = DefaultAzureCredential()</span><span class="l" data-n="53">    kb_client = client_from_env(credential)</span><span class="l" data-n="54"></span><span class="l m" data-n="55">    chat_client = FoundryChatClient(</span><span class="l" data-n="56">        project_endpoint=os.environ[<span class="s">"FOUNDRY_PROJECT_ENDPOINT"</span>],</span><span class="l" data-n="57">        model=os.environ[<span class="s">"AZURE_AI_MODEL_DEPLOYMENT_NAME"</span>],</span><span class="l" data-n="58">        credential=credential,</span><span class="l" data-n="59">    )</span><span class="l" data-n="60"></span><span class="l m" data-n="61">    agent = Agent(</span><span class="l" data-n="62">        client=chat_client,</span><span class="l" data-n="63">        name=<span class="s">"airbus-maintenance-agent"</span>,</span><span class="l" data-n="64">        instructions=INSTRUCTIONS,</span><span class="l m" data-n="65">        tools=[build_search_tool(kb_client)],</span><span class="l" data-n="66">        <span class="c"># Conversation history is managed by the hosting infrastructure…</span></span><span class="l" data-n="68">        default_options={<span class="s">"store"</span>: False},</span><span class="l" data-n="69">    )</span></pre>
+    </div>
+
+    <div class="beat">
+      <div class="beat-text">
+        <h4>The line that makes it “hosted”</h4>
+        <p class="lines">main.py:73</p>
+        <p>Exposes the agent over the OpenAI Responses protocol.</p>
+        <p class="say">Same file on my laptop on port 8088, and in Foundry’s managed sandbox. No code changes between the two.</p>
+      </div>
+<pre><span class="l m" data-n="73">    <span class="k">await</span> ResponsesHostServer(agent).run_async()</span></pre>
+    </div>
+
+    <div class="beat">
+      <div class="beat-text">
+        <h4>Instructions enforce grounding</h4>
+        <p class="lines">main.py:21–48</p>
+        <p class="say">An earlier version answered “boiling point of mercury?” from memory without searching. These two rules fixed it.</p>
+      </div>
+<pre><span class="l" data-n="26">Searching:</span><span class="l m" data-n="27">- Call `search_airplane_knowledge` before answering ANY question that asks for facts,</span><span class="l" data-n="28">figures, procedures or explanations -- not only ones that mention aircraft.</span><span class="l" data-n="33">Answering:</span><span class="l m" data-n="34">- Answer only from the returned passages. Never answer from your own knowledge, even</span><span class="l" data-n="35">when you are confident and even when the question seems like common knowledge.</span><span class="l" data-n="40">- Cite the passages you used inline as [ref_id], for example [3]. Every factual claim</span><span class="l" data-n="41">needs a citation.</span></pre>
+    </div>
+  </section>
+
+  <section class="part" id="iq">
+    <div class="part-head"><h2>Connecting to Foundry IQ</h2><span class="file">agent/knowledge_base.py</span></div>
+    <p class="lede">The heart of the session: how the agent reaches the knowledge base, and why this way.</p>
+
+    <div class="beat">
+      <div class="beat-text">
+        <h4>MCP or REST? We chose REST</h4>
+        <p class="lines">knowledge_base.py:1–9</p>
+        <p>A Foundry IQ knowledge base can be queried through its MCP endpoint or through REST <code>/retrieve</code>.</p>
+        <p class="say">MCP is less wiring. But only REST returns the <code>activity</code> array: the query plan, the subqueries and their timings. That’s what the trace panel draws.</p>
+      </div>
+<pre><span class="l" data-n="1"><span class="c">"""Foundry IQ knowledge base access for the hosted agent.</span></span><span class="l" data-n="2"></span><span class="l m" data-n="3"><span class="c">The agent queries the knowledge base through its REST ``/retrieve`` endpoint rather</span></span><span class="l m" data-n="4"><span class="c">than its MCP endpoint. Both are supported ways to query a Foundry IQ knowledge base,</span></span><span class="l m" data-n="5"><span class="c">but only ``/retrieve`` returns the ``activity`` array describing how the answer was</span></span><span class="l" data-n="6"><span class="c">assembled: which model planned the query, how it decomposed the question into</span></span><span class="l" data-n="7"><span class="c">subqueries, and how long each one took.</span></span></pre>
+    </div>
+
+    <div class="beat">
+      <div class="beat-text">
+        <h4>The endpoint and keyless auth</h4>
+        <p class="lines">knowledge_base.py:22, 43–72</p>
+        <p>That URL <em>is</em> the Foundry IQ connection. The token is for the <code>search.azure.com</code> scope, requested as the agent’s own identity.</p>
+        <p class="say">We don’t write a search query. We send the user’s question as a message; the knowledge base plans its own searches.</p>
+      </div>
+<pre><span class="l m" data-n="22">SEARCH_SCOPE = <span class="s">"https://search.azure.com/.default"</span></span><span class="l" data-n="…"></span><span class="l m" data-n="43">        self._url = (</span><span class="l m" data-n="44">            f<span class="s">"{search_endpoint.rstrip('/')}/knowledgeBases/{knowledge_base}"</span></span><span class="l m" data-n="45">            f<span class="s">"/retrieve?api-version={api_version}"</span></span><span class="l" data-n="46">        )</span><span class="l" data-n="…"></span><span class="l" data-n="64">    <span class="k">async def</span> retrieve(self, query: str) -&gt; dict[str, Any]:</span><span class="l" data-n="65">        headers = {</span><span class="l" data-n="66">            <span class="s">"Authorization"</span>: f<span class="s">"Bearer {await self._bearer()}"</span>,</span><span class="l" data-n="67">            <span class="s">"Content-Type"</span>: <span class="s">"application/json"</span>,</span><span class="l" data-n="68">        }</span><span class="l m" data-n="69">        body = {<span class="s">"messages"</span>: [{<span class="s">"role"</span>: <span class="s">"user"</span>, <span class="s">"content"</span>: [{<span class="s">"type"</span>: <span class="s">"text"</span>, <span class="s">"text"</span>: query}]}]}</span><span class="l" data-n="70">        response = <span class="k">await</span> self._http.post(self._url, headers=headers, json=body)</span></pre>
+    </div>
+
+    <div class="beat">
+      <div class="beat-text">
+        <h4>The tool the model sees</h4>
+        <p class="lines">knowledge_base.py:190–205</p>
+        <p>The <code>@tool</code> decorator turns a Python function into a tool.</p>
+        <p class="say">The parameter description and the docstring are prompt engineering. They’re what the model reads when it decides how to call the tool.</p>
+      </div>
+<pre><span class="l m" data-n="190">    @tool(name=<span class="s">"search_airplane_knowledge"</span>)</span><span class="l" data-n="191">    <span class="k">async def</span> search_airplane_knowledge(</span><span class="l" data-n="192">        query: Annotated[</span><span class="l" data-n="193">            str,</span><span class="l m" data-n="194">            <span class="s">"The user's information need as one complete, natural-language question. "</span></span><span class="l m" data-n="195">            <span class="s">"Keep every distinctive token from the user verbatim: aircraft types (A320, "</span></span><span class="l" data-n="196">            <span class="s">"A320neo), part names, ATA chapter numbers, figure identifiers and "</span></span><span class="l" data-n="197">            <span class="s">"measurements. Do not reduce it to keywords."</span>,</span><span class="l" data-n="198">        ],</span><span class="l" data-n="199">    ) -&gt; str:</span><span class="l m" data-n="200">        <span class="c">"""Search the Airbus airplane knowledge base for manuals, parts and procedures.</span></span></pre>
+    </div>
+
+    <div class="beat">
+      <div class="beat-text">
+        <h4>Shaping what goes back</h4>
+        <p class="lines">knowledge_base.py:222–240</p>
+        <p>Passages are capped because they dominate token cost. References are filtered so the model can’t cite a passage it never received. <code>retrieval_activity</code> rides along for the UI.</p>
+      </div>
+<pre><span class="l" data-n="222">        passages = [</span><span class="l" data-n="223">            {<span class="s">"ref_id"</span>: p.get(<span class="s">"ref_id"</span>), <span class="s">"content"</span>: (p.get(<span class="s">"content"</span>) or <span class="s">""</span>)[:MAX_PASSAGE_CHARS]}</span><span class="l m" data-n="224">            <span class="k">for</span> p <span class="k">in</span> _passages(payload)[:MAX_PASSAGES]</span><span class="l" data-n="225">        ]</span><span class="l m" data-n="229">        kept = {str(p[<span class="s">"ref_id"</span>]) <span class="k">for</span> p <span class="k">in</span> passages <span class="k">if</span> p.get(<span class="s">"ref_id"</span>) <span class="k">is not</span> None}</span><span class="l m" data-n="230">        references = [r <span class="k">for</span> r <span class="k">in</span> _references(payload) <span class="k">if</span> str(r.get(<span class="s">"ref_id"</span>)) <span class="k">in</span> kept]</span><span class="l" data-n="231"></span><span class="l" data-n="232">        <span class="k">return</span> json.dumps(</span><span class="l" data-n="233">            {</span><span class="l" data-n="234">                <span class="s">"passages"</span>: passages,</span><span class="l" data-n="235">                <span class="s">"references"</span>: references,</span><span class="l m" data-n="238">                <span class="s">"retrieval_activity"</span>: _activity(payload, elapsed_ms),</span></pre>
+    </div>
+
+    <div class="beat">
+      <div class="beat-text">
+        <h4>What “agentic retrieval” really does</h4>
+        <p class="lines">knowledge_base.py:124–184</p>
+        <p class="say">It isn’t one search. It plans (usually twice), fans out into several subqueries, then reasons over the results. Each branch here is one of those stages.</p>
+      </div>
+<pre><span class="l" data-n="136">    <span class="k">for</span> step <span class="k">in</span> payload.get(<span class="s">"activity"</span>, []):</span><span class="l" data-n="137">        kind = step.get(<span class="s">"type"</span>)</span><span class="l" data-n="138"></span><span class="l m" data-n="139">        <span class="k">if</span> kind == <span class="s">"modelQueryPlanning"</span>:</span><span class="l" data-n="140">            planning.append({ … model, input_tokens, output_tokens, elapsed_ms … })</span><span class="l m" data-n="149">        <span class="k">elif</span> kind == <span class="s">"agenticReasoning"</span>:</span><span class="l" data-n="150">            reasoning = { … reasoning_tokens, retrieval_effort, logical_effort … }</span><span class="l m" data-n="155">        <span class="k">else</span>:</span><span class="l" data-n="156">            <span class="c"># Every remaining kind is a knowledge-source query.</span></span><span class="l" data-n="167">            subqueries.append({ … search, count, elapsed_ms … })</span></pre>
+    </div>
+  </section>
+
+  <section class="part" id="deploy">
+    <div class="part-head"><h2>Configure &amp; deploy the hosted agent</h2><span class="file">deploy/deploy_agent.py</span></div>
+    <p class="lede">How the same <code>main.py</code> becomes a versioned agent running in Foundry.</p>
+
+    <div class="beat">
+      <div class="beat-text">
+        <h4>The hosted agent definition</h4>
+        <p class="lines">deploy_agent.py:88–99</p>
+        <p>Infrastructure as a Python object: size, runtime, entry point, protocol, configuration.</p>
+        <p class="say"><code>REMOTE_BUILD</code> means Foundry installs the requirements for us. No Docker, no container registry.</p>
+      </div>
+<pre><span class="l" data-n="88"><span class="k">def</span> definition(protocol_version: str, environment: dict[str, str]) -&gt; HostedAgentDefinition:</span><span class="l" data-n="89">    <span class="k">return</span> HostedAgentDefinition(</span><span class="l m" data-n="90">        cpu=CPU,</span><span class="l m" data-n="91">        memory=MEMORY,</span><span class="l" data-n="92">        code_configuration=CodeConfiguration(</span><span class="l m" data-n="93">            runtime=RUNTIME,</span><span class="l m" data-n="94">            entry_point=[<span class="s">"python"</span>, <span class="s">"main.py"</span>],</span><span class="l m" data-n="95">            dependency_resolution=CodeDependencyResolution.REMOTE_BUILD,</span><span class="l" data-n="96">        ),</span><span class="l m" data-n="97">        protocol_versions=[ProtocolVersionRecord(protocol=<span class="s">"responses"</span>, version=protocol_version)],</span><span class="l m" data-n="98">        environment_variables=environment,</span><span class="l" data-n="99">    )</span></pre>
+    </div>
+
+    <div class="beat">
+      <div class="beat-text">
+        <h4>Configuration and upload</h4>
+        <p class="lines">deploy_agent.py:197, 229</p>
+        <p>Endpoints, model and knowledge base name become environment variables of the hosted version. The code ships as a zip.</p>
+        <p class="say">Every deploy creates a new immutable version.</p>
+      </div>
+<pre><span class="l m" data-n="197">    environment = {</span><span class="l" data-n="198">        <span class="s">"FOUNDRY_PROJECT_ENDPOINT"</span>: project_endpoint,</span><span class="l" data-n="199">        <span class="s">"AZURE_AI_MODEL_DEPLOYMENT_NAME"</span>: model,</span><span class="l" data-n="200">        <span class="s">"SEARCH_ENDPOINT"</span>: search_endpoint,</span><span class="l" data-n="201">        <span class="s">"KB_NAME"</span>: kb_name,</span><span class="l" data-n="…">        …</span><span class="l" data-n="…">    }</span><span class="l" data-n="…"></span><span class="l m" data-n="229">                    created = client.agents.create_version_from_code(</span><span class="l" data-n="230">                        agent_name=agent_name,</span><span class="l" data-n="231">                        definition=definition(protocol_version, environment),</span><span class="l" data-n="232">                        code=code,</span></pre>
+    </div>
+
+    <div class="beat">
+      <div class="beat-text">
+        <h4>The identity gotcha</h4>
+        <p class="lines">deploy_agent.py:124–138</p>
+        <p class="warn">The hosted agent gets its <strong>own Entra identity at deploy time</strong>. It needs <strong>Search Index Data Reader</strong> on the search service, which can only be granted after the first deploy. Until then, every retrieval returns 403.</p>
+      </div>
+<pre><span class="l" data-n="124"><span class="k">def</span> agent_principal_id(client: AIProjectClient, agent_name: str, version: str) -&gt; str | None:</span><span class="l" data-n="125">    <span class="c">"""The Entra identity Foundry created for this agent, which retrieval runs as."""</span></span><span class="l" data-n="126">    details = client.agents.get_version(agent_name=agent_name, agent_version=version)</span><span class="l m" data-n="127">    identity = details.get(<span class="s">"instance_identity"</span>) or {}</span><span class="l" data-n="128">    <span class="k">return</span> identity.get(<span class="s">"principal_id"</span>)</span><span class="l" data-n="…"></span><span class="l" data-n="131"><span class="k">def</span> grant_search_access(principal_id: str, scope: str) -&gt; None:</span><span class="l m" data-n="138">    role = <span class="s">"Search Index Data Reader"</span></span></pre>
+    </div>
+
+    <div class="beat">
+      <div class="beat-text">
+        <h4>Routing traffic</h4>
+        <p class="lines">deploy_agent.py:170–177</p>
+        <p>The agent endpoint is pointed at the new version with 100% of traffic.</p>
+      </div>
+<pre><span class="l" data-n="170"><span class="k">def</span> route_endpoint(client: AIProjectClient, agent_name: str, version: str) -&gt; None:</span><span class="l" data-n="…"></span><span class="l m" data-n="172">    client.agents.update_details(</span><span class="l" data-n="173">        agent_name=agent_name,</span><span class="l" data-n="174">        agent_endpoint=AgentEndpointConfig(</span><span class="l" data-n="175">            version_selector=VersionSelector(</span><span class="l" data-n="176">                version_selection_rules=[</span><span class="l m" data-n="177">                    FixedRatioVersionSelectionRule(agent_version=version, traffic_percentage=100)</span></pre>
+    </div>
+  </section>
+
+  <section class="part" id="call">
+    <div class="part-head"><h2>Calling the agent &amp; surfacing traces</h2><span class="file">backend/app.py · backend/trace.py</span></div>
+    <p class="lede">Keep this short. It shows any client can call a hosted agent.</p>
+
+    <div class="beat">
+      <div class="beat-text">
+        <h4>Every hosted agent has this URL</h4>
+        <p class="lines">app.py:29, 61–86</p>
+        <p>A standard OpenAI Responses call. The token is requested server-side, so no credential reaches the browser. Pass <code>previous_response_id</code> for multi-turn.</p>
+      </div>
+<pre><span class="l m" data-n="29">FOUNDRY_SCOPE = <span class="s">"https://ai.azure.com/.default"</span></span><span class="l" data-n="…"></span><span class="l" data-n="64">    <span class="k">return</span> (</span><span class="l" data-n="65">        f<span class="s">"{settings.project_endpoint.rstrip('/')}"</span></span><span class="l m" data-n="66">        f<span class="s">"/agents/{settings.agent_name}/endpoint/protocols/openai/responses"</span></span><span class="l" data-n="67">        <span class="s">"?api-version=v1"</span></span><span class="l" data-n="…"></span><span class="l m" data-n="85">    <span class="k">if</span> request.previous_response_id:</span><span class="l" data-n="86">        body[<span class="s">"previous_response_id"</span>] = request.previous_response_id</span></pre>
+    </div>
+
+    <div class="beat">
+      <div class="beat-text">
+        <h4>One stream, two audiences</h4>
+        <p class="lines">trace.py:60–85</p>
+        <p class="say">The tool’s output streams back as a <code>function_call_output</code> event. We read <code>retrieval_activity</code> out of it and turn it into timeline events. The model and the UI read the same stream.</p>
+      </div>
+<pre><span class="l m" data-n="60">        <span class="k">if</span> item.get(<span class="s">"type"</span>) != <span class="s">"function_call_output"</span>:</span><span class="l" data-n="61">            <span class="k">return</span></span><span class="l" data-n="…"></span><span class="l m" data-n="68">        activity = payload.get(<span class="s">"retrieval_activity"</span>) or {}</span><span class="l" data-n="…"></span><span class="l" data-n="73">            <span class="k">yield</span> _event(</span><span class="l m" data-n="74">                <span class="s">"retrieval.plan"</span>,</span><span class="l" data-n="…"></span><span class="l" data-n="84">            <span class="k">yield</span> _event(</span><span class="l m" data-n="85">                <span class="s">"retrieval.query"</span>,</span></pre>
+    </div>
+  </section>
+
+  <section class="part" id="close">
+    <div class="part-head"><h2>Close on the grounding check</h2></div>
+    <div class="cards">
+      <div class="card">
+        <h3>Ask</h3>
+        <p class="prompt">What is the boiling point of mercury?</p>
+        <p>It searches, finds nothing relevant, and says so instead of answering from memory. Ties back to the instructions in <code>main.py:27</code> and <code>:34</code>.</p>
+      </div>
+      <div class="card">
+        <h3>Likely questions</h3>
+        <dl class="qa">
+          <dt>Why not MCP?</dt><dd>Less code, but no visibility into how retrieval worked.</dd>
+          <dt>What does it cost?</dt><dd>The model call plus 40k–250k agentic reasoning tokens per question in the knowledge base.</dd>
+          <dt>Must it be Agent Framework?</dt><dd>No. Hosted agents run any Python or C# code; this one happens to use Agent Framework.</dd>
+        </dl>
+      </div>
+    </div>
+  </section>
+</div>
+</body>
+</html>
