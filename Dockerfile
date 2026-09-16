@@ -17,6 +17,9 @@ RUN pip install --no-cache-dir -r backend/requirements.txt
 
 COPY backend/ ./backend/
 COPY --from=web /build/dist ./web/dist
+# The presenter sheet ships alongside the UI so it is reachable at /presenter-sheet.html,
+# behind the same sign-in. The backend serves any real file in web/dist.
+COPY docs/presenter-sheet.html ./web/dist/presenter-sheet.html
 
 # Container Apps sets PORT; default matches the local dev port.
 ENV PORT=8000
