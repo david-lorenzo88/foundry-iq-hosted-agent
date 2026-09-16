@@ -16,6 +16,13 @@ is specific to aircraft: point it at any Foundry IQ knowledge base and it works.
 
 *One question end to end, including Entra sign-in — [open in Eraser](https://app.eraser.io/workspace/P2gwW03Pkgs3LgpNYs56)*
 
+## Presenting this code
+
+[`docs/presenter-sheet.html`](docs/presenter-sheet.html) walks through the source in
+speaking order — demo, the hosted agent, the Foundry IQ connection, deployment, and
+tracing — with real excerpts, the lines to point at, and a talking point for each.
+GitHub shows HTML as source, so clone the repo and open the file in a browser.
+
 ## What the trace panel shows
 
 Most RAG demos show you an answer and a list of citations. Agentic retrieval does much
